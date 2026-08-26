@@ -1,0 +1,22 @@
+# Virtual environment
+.rpay/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# VS Code
+.vscode/
+
+# Raw datasets
+data/raw/
+
+# Large/generated files
+*.zip
+*.csv
