@@ -61,12 +61,16 @@ def predict(data: PredictionInput):
     input_data = pd.DataFrame([data.model_dump()])
 
     # Prediction
-    prediction = model.predict(input_data)[0]
-
-    # Probability of recovery opportunity
+   # Probability of recovery opportunity
     probability = model.predict_proba(input_data)[0][1]
 
+    # RevivePay decision threshold
+    THRESHOLD = 0.40
+
+    # Classify using our selected threshold
+    prediction = int(probability >= THRESHOLD)
+
     return {
-        "recovery_opportunity": int(prediction),
+        "recovery_opportunity": prediction,
         "recovery_probability": round(float(probability), 4)
     }
