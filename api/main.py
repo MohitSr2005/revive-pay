@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import pandas as pd
@@ -12,6 +13,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Enable CORS for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Load trained model
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,18 +30,21 @@ MODEL_PATH = BASE_DIR / "src" / "tuned_xgb_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 
+from typing import Optional
+
+
 # Input schema
 class PredictionInput(BaseModel):
     total_payment_value: float
-    payment_count: float
-    payment_installments: float
-    primary_payment_type: str
+    payment_count: float = 1.0
+    payment_installments: float = 1.0
+    primary_payment_type: str = "credit_card"
 
-    item_count: float
-    total_item_price: float
-    total_freight_value: float
-    unique_products: float
-    unique_sellers: float
+    item_count: Optional[float] = None
+    total_item_price: Optional[float] = None
+    total_freight_value: Optional[float] = None
+    unique_products: Optional[float] = None
+    unique_sellers: Optional[float] = None
 
     customer_city: str
     customer_state: str
@@ -42,9 +55,9 @@ class PredictionInput(BaseModel):
     purchase_dayofweek: int
     purchase_hour: int
 
-    approval_delay_hours: float
-    delivery_time_days: float
-    estimated_delivery_gap_days: float
+    approval_delay_hours: float = 0.0
+    delivery_time_days: Optional[float] = None
+    estimated_delivery_gap_days: Optional[float] = None
 
 
 @app.get("/")

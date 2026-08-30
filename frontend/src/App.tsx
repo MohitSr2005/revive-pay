@@ -1,0 +1,287 @@
+import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { PredictionForm } from './components/PredictionForm';
+import { ResultCard } from './components/ResultCard';
+import { ExplainabilityPlaceholder } from './components/ExplainabilityPlaceholder';
+import { HistoryDrawer } from './components/HistoryDrawer';
+import { MetricsInfoModal } from './components/MetricsInfoModal';
+import { 
+  PredictionInputPayload, 
+  PredictionResponse, 
+  PredictionHistoryItem, 
+  PresetScenario 
+} from './types/prediction';
+import { DEFAULT_FORM_VALUES } from './data/presets';
+import { checkBackendHealth, predictRecoveryOpportunity, ApiStatus } from './services/api';
+import { 
+  Shield, 
+  Zap, 
+  Layers, 
+  Cpu, 
+  AlertCircle
+} from 'lucide-react';
+
+export const App: React.FC = () => {
+  // Form State
+  const [formData, setFormData] = useState<PredictionInputPayload>(DEFAULT_FORM_VALUES);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  // Result & Processing State
+  const [result, setResult] = useState<PredictionResponse | null>(null);
+  const [lastSubmittedInput, setLastSubmittedInput] = useState<PredictionInputPayload | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Session History State
+  const [history, setHistory] = useState<PredictionHistoryItem[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+
+  // Modal State
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
+
+  // Backend Health State
+  const [apiStatus, setApiStatus] = useState<ApiStatus>({
+    online: false,
+    message: 'Checking connection...',
+  });
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+
+  // Check health on mount and periodically
+  const handleCheckHealth = async () => {
+    setIsCheckingStatus(true);
+    const status = await checkBackendHealth();
+    setApiStatus(status);
+    setIsCheckingStatus(false);
+  };
+
+  useEffect(() => {
+    handleCheckHealth();
+    const interval = setInterval(handleCheckHealth, 30000); // periodically ping every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle Preset Selection
+  const handleSelectPreset = (preset: PresetScenario) => {
+    setFormData({ ...preset.data });
+    setActivePresetId(preset.id);
+    // Clear previous error if any
+    setError(null);
+  };
+
+  // Handle Reset to default values
+  const handleReset = () => {
+    setFormData(DEFAULT_FORM_VALUES);
+    setActivePresetId(null);
+    setResult(null);
+    setError(null);
+  };
+
+  // Handle Form Submission to FastAPI
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await predictRecoveryOpportunity(formData);
+      setResult(response);
+      setLastSubmittedInput({ ...formData });
+
+      // Add to Session History Log
+      const historyItem: PredictionHistoryItem = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        input: { ...formData },
+        result: response,
+      };
+      setHistory((prev) => [historyItem, ...prev]);
+
+      // Scroll smoothly to results card on mobile
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          const resultElement = document.getElementById('prediction-result-section');
+          if (resultElement) {
+            resultElement.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      }
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setError(errorObj.message || 'An unexpected error occurred during prediction.');
+      setResult(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reload an item from History into the Form
+  const handleSelectHistoryItem = (item: PredictionHistoryItem) => {
+    setFormData({ ...item.input });
+    setResult(item.result);
+    setLastSubmittedInput({ ...item.input });
+    setActivePresetId(null);
+    setError(null);
+  };
+
+  const handleClearHistory = () => {
+    setHistory([]);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
+      
+      {/* Navigation Header */}
+      <Header
+        apiStatus={apiStatus}
+        isCheckingStatus={isCheckingStatus}
+        onRefreshStatus={handleCheckHealth}
+        historyCount={history.length}
+        onToggleHistory={() => setIsHistoryOpen(true)}
+        onOpenInfo={() => setIsInfoModalOpen(true)}
+      />
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-10">
+        
+        {/* Hero Section & Main Heading */}
+        <div className="relative rounded-3xl border border-slate-800/80 bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950 p-6 sm:p-10 shadow-2xl overflow-hidden backdrop-blur-xl">
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 -mb-16 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-3xl space-y-4">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              <span>Machine Learning-Driven Fintech Intelligence</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+              Recovery Opportunity Detection
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+              Detect whether an e-commerce payment transaction represents an active revenue recovery opportunity. 
+              Powered by a calibrated gradient boosting pipeline evaluating gateway authorization delays, customer geolocation, and logistics intervals.
+            </p>
+
+            {/* Quick Metrics Badges */}
+            <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Model: <strong className="text-slate-200">XGBoost Classifier</strong></span>
+              </div>
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                <Shield className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Decision Threshold: <strong className="text-slate-200">40.0% (0.40)</strong></span>
+              </div>
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Features: <strong className="text-slate-200">19 Parameters</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Backend Offline Warning Banner if unreachable */}
+        {!apiStatus.online && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <strong className="font-semibold text-white">FastAPI Backend is not detected at http://127.0.0.1:8000.</strong>
+                <p className="text-amber-300/80 text-xs mt-0.5">
+                  Make sure to run <code className="bg-amber-950/80 px-1.5 py-0.5 rounded text-amber-200 font-mono">python -m uvicorn api.main:app --reload</code> in the terminal.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleCheckHealth}
+              disabled={isCheckingStatus}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-colors shrink-0"
+            >
+              {isCheckingStatus ? 'Checking...' : 'Check Connection'}
+            </button>
+          </div>
+        )}
+
+        {/* Prediction Form Section */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h2 className="text-xl font-bold text-white tracking-tight">Transaction Input Parameters</h2>
+              <p className="text-xs text-slate-400">Configure the 19 transaction attributes for recovery classification</p>
+            </div>
+          </div>
+
+          <PredictionForm
+            formData={formData}
+            onChange={setFormData}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            onSelectPreset={handleSelectPreset}
+            onReset={handleReset}
+            activePresetId={activePresetId}
+          />
+        </section>
+
+        {/* Prediction Results & Explainability Section */}
+        <section id="prediction-result-section" className="space-y-6 pt-4">
+          <div className="space-y-0.5">
+            <h2 className="text-xl font-bold text-white tracking-tight">Classification & Risk Analysis</h2>
+            <p className="text-xs text-slate-400">Model inference output and calibrated recovery probability</p>
+          </div>
+
+          <ResultCard
+            result={result}
+            inputData={lastSubmittedInput}
+            isLoading={isLoading}
+            error={error}
+            onRetry={() => {
+              const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+              handleSubmit(fakeEvent);
+            }}
+          />
+
+          {/* Model Explainability & SHAP Hook Module */}
+          {result && (
+            <ExplainabilityPlaceholder
+              inputData={lastSubmittedInput}
+              result={result}
+            />
+          )}
+        </section>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 bg-slate-950/80 py-8 mt-16 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-slate-400">RevivePay</span>
+            <span>•</span>
+            <span>Fintech Payment Recovery Intelligence</span>
+          </div>
+          <div className="font-mono text-[11px] text-slate-500">
+            FastAPI Backend: <span className="text-emerald-400">http://127.0.0.1:8000/predict</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Session History Drawer */}
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        history={history}
+        onSelectHistoryItem={handleSelectHistoryItem}
+        onClearHistory={handleClearHistory}
+      />
+
+      {/* Model Information Modal */}
+      <MetricsInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+      />
+
+    </div>
+  );
+};
