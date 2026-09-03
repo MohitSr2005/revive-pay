@@ -12,7 +12,12 @@ import {
   PresetScenario 
 } from './types/prediction';
 import { DEFAULT_FORM_VALUES } from './data/presets';
-import { checkBackendHealth, predictRecoveryOpportunity, ApiStatus } from './services/api';
+import {
+  checkBackendHealth,
+  predictRecoveryOpportunity,
+  explainRecoveryOpportunity,
+  ApiStatus,
+} from './services/api';
 import { 
   Shield, 
   Zap, 
@@ -31,6 +36,8 @@ export const App: React.FC = () => {
   const [lastSubmittedInput, setLastSubmittedInput] = useState<PredictionInputPayload | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // SHAP Explainability State
+  const [shapExplanations, setShapExplanations] = useState<any[]>([]);
 
   // Session History State
   const [history, setHistory] = useState<PredictionHistoryItem[]>([]);
@@ -73,9 +80,9 @@ export const App: React.FC = () => {
     setFormData(DEFAULT_FORM_VALUES);
     setActivePresetId(null);
     setResult(null);
+    setShapExplanations([]);
     setError(null);
   };
-
   // Handle Form Submission to FastAPI
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,9 +91,12 @@ export const App: React.FC = () => {
 
     try {
       const response = await predictRecoveryOpportunity(formData);
+
       setResult(response);
       setLastSubmittedInput({ ...formData });
-
+      // Get real SHAP explanations for the same transaction
+      const explanations = await explainRecoveryOpportunity(formData);
+      setShapExplanations(explanations);
       // Add to Session History Log
       const historyItem: PredictionHistoryItem = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -247,6 +257,7 @@ export const App: React.FC = () => {
             <ExplainabilityPlaceholder
               inputData={lastSubmittedInput}
               result={result}
+              explanations={shapExplanations}
             />
           )}
         </section>
