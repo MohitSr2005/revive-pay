@@ -1,0 +1,20 @@
+{
+    "recovery_threshold": 0.40,
+    "auto_execute_threshold": 0.80,
+    "max_auto_recovery_value": 500.0,
+
+    "allowed_interventions": [
+        "payment_recovery",
+        "checkout_recovery",
+        "subscription_recovery"
+    ],
+
+    "automatic_actions": [
+        "payment_recovery",
+        "checkout_recovery"
+    ],
+
+    "human_review_actions": [
+        "subscription_recovery"
+    ]
+}
