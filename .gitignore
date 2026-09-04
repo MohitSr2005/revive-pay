@@ -1,22 +1,40 @@
-# Virtual environment
-.rpay/
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.rpay/
+venv/
+.env
+.venv/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Environment variables
-.env
-
-# VS Code
-.vscode/
-
-# Raw datasets
+# Data
 data/raw/
+data/processed/
 
-# Large/generated files
-*.zip
-*.csv
+# Runtime agent state
+data/agent_state/
+
+# Logs
+*.log
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Environment files
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

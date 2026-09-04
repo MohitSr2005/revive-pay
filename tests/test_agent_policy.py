@@ -123,6 +123,10 @@ high_value_state = {
 
     "intervention": "payment_recovery",
     "intervention_reason": "High recovery opportunity detected.",
+    "root_cause": "Transaction value exceeds the automatic recovery limit.",
+    "root_cause_details": [
+        "High-value recovery requires additional human oversight."
+    ],
 }
 
 

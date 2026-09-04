@@ -595,7 +595,7 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({
           ) : (
             <>
               <Zap className="w-5 h-5 fill-current" />
-              <span>Predict Recovery Opportunity</span>
+              <span>Run RevivePay Recovery Agent</span>
             </>
           )}
         </button>

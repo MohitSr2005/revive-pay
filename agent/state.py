@@ -2,7 +2,6 @@ from typing import TypedDict, Any, List, Dict
 
 
 class AgentState(TypedDict, total=False):
-    # Original transaction
     input_data: Dict[str, Any]
 
     # Risk detection
@@ -13,7 +12,7 @@ class AgentState(TypedDict, total=False):
     # Explainability
     explanations: List[Dict[str, Any]]
 
-    # Agent reasoning
+    # Root cause
     root_cause: str
     root_cause_details: List[str]
 
@@ -21,10 +20,15 @@ class AgentState(TypedDict, total=False):
     intervention: str
     intervention_reason: str
 
-    # Safety / execution
+    # Policy / execution
     action_allowed: bool
     action_status: str
     workflow_id: str
-
-    # Final response
     agent_message: str
+
+    # Human-in-the-loop
+    review_id: str
+    review_decision: str
+
+    # Agent activity timeline
+    activity_log: List[Dict[str, Any]]

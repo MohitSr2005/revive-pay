@@ -203,4 +203,145 @@ export async function explainRecoveryOpportunity(
       `Unable to connect to RevivePay explainability API at ${baseUrl}. Error: ${error.message}`
     );
   }
+}/**
+ * Sends a transaction to the RevivePay LangGraph agent.
+ *
+ * The agent performs:
+ * XGBoost risk detection → SHAP explanation →
+ * root-cause analysis → intervention planning →
+ * policy validation → bounded recovery execution.
+ */
+export async function analyzeWithAgent(
+  payload: PredictionInputPayload,
+  baseUrl = DEFAULT_API_URL
+): Promise<PredictionResponse> {
+  const endpoint = `${baseUrl}/agent/analyze`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorBody = '';
+
+      try {
+        const errorJson = await response.json();
+        errorBody = JSON.stringify(errorJson);
+      } catch {
+        errorBody = await response.text();
+      }
+
+      throw new ApiError(
+        `Agent analysis failed with status ${response.status} (${response.statusText}): ${errorBody}`,
+        response.status,
+        errorBody
+      );
+    }
+
+    const data: PredictionResponse = await response.json();
+
+    // Validate the core agent response.
+    if (
+      typeof data.recovery_probability !== 'number' ||
+      typeof data.prediction !== 'number' ||
+      typeof data.risk_level !== 'string' ||
+      !Array.isArray(data.explanations) ||
+      typeof data.action_allowed !== 'boolean' ||
+      typeof data.action_status !== 'string'
+    ) {
+      throw new ApiError(
+        'Unexpected agent response structure received from API',
+        200,
+        data
+      );
+    }
+
+    return data;
+  } catch (err: unknown) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+
+    const error = err as Error;
+
+    if (error.name === 'AbortError') {
+      throw new ApiError(
+        'Agent analysis timed out after 30 seconds. Check if FastAPI is running and the model is available.',
+        408
+      );
+    }
+
+    throw new ApiError(
+      `Unable to connect to RevivePay Agent at ${baseUrl}. Ensure FastAPI and the LangGraph agent are running. Error: ${error.message}`
+    );
+  }
+}
+export interface HumanReviewResponse {
+  review_id: string;
+  decision: string;
+  action_status: string;
+  workflow_id: string | null;
+  message: string;
+}
+
+
+export async function approveHumanReview(
+  reviewId: string,
+  baseUrl = DEFAULT_API_URL
+): Promise<HumanReviewResponse> {
+
+  const response = await fetch(
+    `${baseUrl}/agent/review/${reviewId}/approve`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Human approval failed with status ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function rejectHumanReview(
+  reviewId: string,
+  baseUrl = DEFAULT_API_URL
+): Promise<HumanReviewResponse> {
+
+  const response = await fetch(
+    `${baseUrl}/agent/review/${reviewId}/reject`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Human rejection failed with status ${response.status}`
+    );
+  }
+
+  return response.json();
 }
