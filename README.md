@@ -153,6 +153,37 @@ Bounded Recovery Workflow
 ```
 
 This turns RevivePay into a continuous revenue recovery loop rather than a one-time prediction system.
+## 🤖 Agent Decision & Monitoring
+
+### Human-in-the-Loop Approval
+
+For medium-risk or policy-sensitive recovery opportunities, RevivePay does not execute automatically. The agent pauses and requests human approval.
+
+<p align="center">
+  <img src="docs/screenshots/human-review.png" width="900" alt="RevivePay Human-in-the-Loop Approval" />
+</p>
+
+---
+
+### Agent Activity Timeline
+
+Every decision is traceable through the agent's execution path:
+
+**Risk Detection → SHAP Analysis → Root Cause → Intervention Planning → Policy Check → Approval → Recovery Execution**
+
+<p align="center">
+  <img src="docs/screenshots/agent-timeline.png" width="900" alt="RevivePay Agent Activity Timeline" />
+</p>
+
+---
+
+### Low-Risk Transaction Monitoring
+
+Transactions below the recovery threshold are not unnecessarily acted upon. RevivePay places them into a monitoring path.
+
+<p align="center">
+  <img src="docs/screenshots/monitoring.png" width="900" alt="RevivePay Low-Risk Monitoring" />
+</p>
 
 ---
 
