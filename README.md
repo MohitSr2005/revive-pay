@@ -847,23 +847,3 @@ The result is an:
 # 👨‍💻 Author
 
 ## Mohit Srivastava
-
-**B.Tech — Electronics & Communication Engineering**
-
-Interested in:
-
-**AI/ML · Agentic AI · Data Science · Backend Engineering · MLOps**
-
----
-
-<p align="center">
-
-## 💰 Find the revenue that's slipping away.
-
-### 🤖 Understand why.
-
-### ⚡ Recover it responsibly.
-
-**RevivePay**
-
-</p>
